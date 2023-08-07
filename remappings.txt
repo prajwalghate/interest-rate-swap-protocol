@@ -1,0 +1,15 @@
+@earth/=src/
+forge-std/=lib/forge-std/src/
+ds-test/=lib/forge-std/lib/ds-test/src/
+erc4626-tests/=lib/erc4626-tests/
+@openzeppelin/=lib/openzeppelin-contracts/contracts/
+@pancakeswap-v2-core/=lib/pancake-swap-core/contracts/
+@pancakeswap-v2-exchange-protocol/=lib/pancake-smart-contracts/projects/exchange-protocol/contracts/
+@pancakeswap-v3-core/=lib/pancake-v3-contracts/projects/v3-core/contracts/
+@pancakeswap-v3-periphery/=lib/pancake-v3-contracts/projects/v3-periphery/contracts/
+@pancakeswap-v3-router/=lib/pancake-v3-contracts/projects/router/contracts/
+@pancakeswap-v3-masterchef/=lib/pancake-v3-contracts/projects/masterchef-v3/contracts/
+@pancakeswap/=lib/pancake-v3-contracts/projects/
+@uniswap/v3-periphery/=lib/v3-periphery/
+@uniswap/v3-core/=lib/v3-core/
+@openzeppelin/contracts/=lib/openzeppelin-contracts//contracts/
