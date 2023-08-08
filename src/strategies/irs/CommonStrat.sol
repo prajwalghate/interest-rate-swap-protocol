@@ -5,6 +5,7 @@ import "@openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/security/ReentrancyGuard.sol";
 import "@openzeppelin/access/Ownable.sol";
 import "@openzeppelin/security/Pausable.sol";
+import "../common/interfaces/IStrategy.sol";
 
 contract CommonStrat is ReentrancyGuard, Ownable, Pausable {
     using SafeERC20 for IERC20;
@@ -60,6 +61,15 @@ contract CommonStrat is ReentrancyGuard, Ownable, Pausable {
 
     // calculate the total underlaying 'stake' held by the strat.
     function balanceOf() public view returns (uint256) {
+        return
+            balanceOfAsset() +
+            IStrategy(parentStrategy)
+                .assetStrategyMap(address(this))
+                .returnAmountNative;
+    }
+
+    // it calculates how much 'stake' this contract holds.
+    function balanceOfAsset() public view returns (uint256) {
         return IERC20(asset).balanceOf(address(this));
     }
 

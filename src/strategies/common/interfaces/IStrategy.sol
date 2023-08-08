@@ -12,6 +12,11 @@ interface IStrategy {
     event Deposit(uint256 tvl);
     event Withdraw(uint256 tvl);
 
+    struct ComonStratData {
+        uint256 stakedInNative;
+        uint256 returnAmountNative;
+    }
+
     function vault() external view returns (address);
 
     function chef() external view returns (address);
@@ -63,4 +68,8 @@ interface IStrategy {
     function owner() external view returns (address);
 
     function manager() external view returns (address);
+
+    function assetStrategyMap(
+        address
+    ) external view returns (ComonStratData memory);
 }
