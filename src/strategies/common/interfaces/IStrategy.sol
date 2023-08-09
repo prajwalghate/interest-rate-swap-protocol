@@ -72,4 +72,6 @@ interface IStrategy {
     function assetStrategyMap(
         address
     ) external view returns (ComonStratData memory);
+
+    function epochRunning() external view returns (bool);
 }

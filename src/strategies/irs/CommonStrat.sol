@@ -48,11 +48,14 @@ contract CommonStrat is ReentrancyGuard, Ownable, Pausable {
     }
 
     function _deposit() internal whenNotPaused nonReentrant {
-        // emit Deposit(balanceOf(), stakeBal);
+        // bool epoch = IStrategy(parentStrategy).epochRunning();
+        // require(!epoch);
     }
 
     function withdraw(uint256 _amount) external nonReentrant {
         onlyVault();
+        // bool epoch = IStrategy(parentStrategy).epochRunning();
+        // require(!epoch);
         IERC20(asset).safeTransfer(vault, _amount);
         emit Withdraw(balanceOf(), _amount);
     }
