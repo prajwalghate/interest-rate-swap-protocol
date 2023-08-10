@@ -215,6 +215,62 @@ contract EarthLpStaking is AbstractStrategy, ReentrancyGuard {
         );
     }
 
+    function startEpoch(address[] memory _strategies) public {
+        _checkOwner();
+        require(_strategies.length == 2);
+        if (epochRunning == true) revert();
+        assetStrategies = _strategies;
+        uint256 deposits0InBase = tokenAToTokenBConversion(
+            ICommonStrat(_strategies[0]).asset(),
+            baseCurrency,
+            ICommonStrat(_strategies[0]).balanceOfAsset()
+        ); ///strategy 0 total deposits in base token
+
+        uint256 deposits1InBase = tokenAToTokenBConversion(
+            ICommonStrat(_strategies[1]).asset(),
+            baseCurrency,
+            ICommonStrat(_strategies[1]).balanceOfAsset()
+        ); ///strategy 1 total deposits in base token
+
+        eachLevAmountInBase = deposits0InBase <= deposits1InBase
+            ? deposits0InBase
+            : deposits1InBase; ///Amout to be taken from eact strategy in base token
+
+        uint256 asset0AmountInNative = tokenAToTokenBConversion(
+            baseCurrency,
+            ICommonStrat(_strategies[0]).asset(),
+            eachLevAmountInBase
+        );
+
+        uint256 asset1AmountInNative = tokenAToTokenBConversion(
+            baseCurrency,
+            ICommonStrat(_strategies[1]).asset(),
+            eachLevAmountInBase
+        ); ///Amout to be taken from  strategy 1 in their asset token
+
+        IERC20(ICommonStrat(_strategies[0]).asset()).safeTransferFrom(
+            _strategies[0],
+            address(this),
+            asset0AmountInNative
+        );
+        IERC20(ICommonStrat(_strategies[1]).asset()).safeTransferFrom(
+            _strategies[1],
+            address(this),
+            asset1AmountInNative
+        );
+        assetStrategyMap[_strategies[0]] = ComonStratData(
+            asset0AmountInNative,
+            _calculatFixedReturnNative(asset0AmountInNative, _strategies[0])
+        );
+        assetStrategyMap[_strategies[1]] = ComonStratData(
+            asset1AmountInNative,
+            _calculatFixedReturnNative(asset1AmountInNative, _strategies[1])
+        );
+        _addLiquidity();
+        _deposit();
+        epochRunning = true;
+    }
+
     function _calculatFixedReturnNative(
         uint256 amount,
         address strategy
