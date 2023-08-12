@@ -14,7 +14,7 @@ import "./interfaces/IPancakeFactory.sol";
 import "../common/AbstractStrategy.sol";
 import "../utils/StringUtils.sol";
 
-struct RiveraLpStakingParams {
+struct EarthLpStakingParams {
     address stake;
     uint256 poolId;
     address chef;
@@ -69,21 +69,21 @@ contract EarthLpStaking is AbstractStrategy, ReentrancyGuard {
     event Withdraw(uint256 tvl, uint256 amount);
 
     ///@dev
-    ///@param _riveraLpStakingParams: Has the cake pool specific params
+    ///@param _earthLpStakingParams: Has the cake pool specific params
     ///@param _commonAddresses: Has addresses common to all vaults, check Rivera Fee manager for more info
     constructor(
-        RiveraLpStakingParams memory _riveraLpStakingParams,
+        EarthLpStakingParams memory _earthLpStakingParams,
         CommonAddresses memory _commonAddresses
     ) AbstractStrategy(_commonAddresses) {
-        stake = _riveraLpStakingParams.stake;
-        poolId = _riveraLpStakingParams.poolId;
-        chef = _riveraLpStakingParams.chef;
-        baseCurrency = _riveraLpStakingParams.baseCurrency;
-        factory = _riveraLpStakingParams.factory;
+        stake = _earthLpStakingParams.stake;
+        poolId = _earthLpStakingParams.poolId;
+        chef = _earthLpStakingParams.chef;
+        baseCurrency = _earthLpStakingParams.baseCurrency;
+        factory = _earthLpStakingParams.factory;
 
-        address[] memory _rewardToLp0Route = _riveraLpStakingParams
+        address[] memory _rewardToLp0Route = _earthLpStakingParams
             .rewardToLp0Route;
-        address[] memory _rewardToLp1Route = _riveraLpStakingParams
+        address[] memory _rewardToLp1Route = _earthLpStakingParams
             .rewardToLp1Route;
 
         reward = _rewardToLp0Route[0];
@@ -269,6 +269,66 @@ contract EarthLpStaking is AbstractStrategy, ReentrancyGuard {
         _addLiquidity();
         _deposit();
         epochRunning = true;
+    }
+
+    function endEpoch() public {
+        address[] memory assetStrategiesArr = assetStrategies;
+        uint256 stakedLp = balanceOfPool();
+        IMasterChef(chef).withdraw(poolId, stakedLp);
+        uint256 fixedReturnInLp = _calculatFixedReturnLp();
+        address asset0 = ICommonStrat(assetStrategiesArr[0]).asset();
+        address asset1 = ICommonStrat(assetStrategiesArr[1]).asset();
+        IERC20(stake).approve(router, fixedReturnInLp);
+        (uint amount0, uint amount1) = IPancakeRouter02(router).removeLiquidity(
+            asset0,
+            asset1,
+            fixedReturnInLp,
+            0,
+            0,
+            address(this),
+            block.timestamp
+        );
+        address[] memory _asset1Toasset0Route = new address[](2);
+        _asset1Toasset0Route[0] = asset1;
+        _asset1Toasset0Route[1] = asset0;
+        address[] memory _asset0Toasset1Route = new address[](2);
+        _asset0Toasset1Route[0] = asset0;
+        _asset0Toasset1Route[1] = asset1;
+
+        //convert amount1 of asset1 tokens to asset0
+        IPancakeRouter02(router).swapExactTokensForTokens(
+            amount1,
+            0,
+            _asset1Toasset0Route,
+            address(this),
+            block.timestamp
+        );
+        uint256 balanceofAsset0 = IERC20(asset0).balanceOf(address(this));
+        uint256 rtrnAmntStart0Inasset0 = assetStrategyMap[assetStrategiesArr[0]]
+            .returnAmountNative;
+        uint256 rtrnAmntStart1Inasset0 = balanceofAsset0 -
+            rtrnAmntStart0Inasset0;
+
+        //convert rtrnAmntStart1Inasset0 of asset0 tokens to asset1 to transfer to strat1
+        IPancakeRouter02(router).swapExactTokensForTokens(
+            rtrnAmntStart1Inasset0,
+            0,
+            _asset0Toasset1Route,
+            address(this),
+            block.timestamp
+        );
+        IERC20(asset0).safeTransfer(
+            assetStrategiesArr[0],
+            IERC20(asset0).balanceOf(address(this))
+        );
+        IERC20(asset1).safeTransfer(
+            assetStrategiesArr[1],
+            IERC20(asset1).balanceOf(address(this))
+        );
+        delete assetStrategyMap[assetStrategiesArr[0]];
+        delete assetStrategyMap[assetStrategiesArr[1]];
+        delete assetStrategies;
+        epochRunning = false;
     }
 
     function _calculatFixedReturnNative(
