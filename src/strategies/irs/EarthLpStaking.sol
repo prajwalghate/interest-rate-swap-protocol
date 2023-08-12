@@ -272,6 +272,9 @@ contract EarthLpStaking is AbstractStrategy, ReentrancyGuard {
     }
 
     function endEpoch() public {
+        _checkOwner();
+        if (epochRunning == false) revert();
+        _harvest();
         address[] memory assetStrategiesArr = assetStrategies;
         uint256 stakedLp = balanceOfPool();
         IMasterChef(chef).withdraw(poolId, stakedLp);
